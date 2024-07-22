@@ -9,13 +9,17 @@ default:
 run:
     cargo shuttle --wd service run
 
+# Check code
+check:
+    cd simulator && cargo check
+
 # Test shuttle deployment
 deploy-debug:
     cargo shuttle --debug --wd service deploy
 
 # Serve front locally
 serve:
-    cd simulator && dx serve
+    cd simulator && dx serve --hot-reload
 
 # Build simulator with debug profile
 build-debug:

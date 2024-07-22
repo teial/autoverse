@@ -1,15 +1,11 @@
 #![allow(non_snake_case)]
 
-use std::time::Duration;
-
 use dioxus::prelude::*;
+use futures_util::stream::StreamExt;
 use gloo::utils::window;
+use gloo_timers::future::TimeoutFuture;
 use grid::Grid;
-use model::{
-    lenia::{self, Lenia},
-    Model,
-};
-use tokio::time;
+use model::{lenia::Lenia, Model};
 use tracing::Level;
 use web_sys::wasm_bindgen::{Clamped, JsCast};
 
@@ -22,6 +18,12 @@ pub use error::Error;
 const WIDTH: usize = 1024;
 const HEIGHT: usize = 512;
 
+pub enum Action {
+    Start,
+    Stop,
+    Pause,
+}
+
 fn main() {
     dioxus_logger::init(Level::INFO).expect("failed to init logger");
     launch(App);
@@ -29,6 +31,7 @@ fn main() {
 
 fn App() -> Element {
     let mut state = use_signal(|| Grid::new(WIDTH, HEIGHT));
+    let mut count = use_signal(|| 0);
     use_effect(move || {
         let document = window().document();
         let canvas = document.unwrap().get_element_by_id("pixels").unwrap();
@@ -73,12 +76,22 @@ fn App() -> Element {
     });
 
     let lenia = Lenia::new(7, 1.0);
-    use_coroutine(|_rx: UnboundedReceiver<()>| {
-        let mut state = state.to_owned();
-        async move {
-            loop {
-                time::sleep(Duration::from_secs(1)).await;
-                let _ = state.write().update(lenia.kernel());
+    let tx = use_coroutine(move |mut rx: UnboundedReceiver<Action>| async move {
+        loop {
+            if let Some(Action::Start) = rx.next().await {
+                'inner: loop {
+                    TimeoutFuture::new(100).await;
+                    let _ = state.write().update(lenia.kernel());
+                    count.set(count + 1);
+                    match rx.try_next() {
+                        Ok(Some(Action::Pause)) => break 'inner,
+                        Ok(Some(Action::Stop)) => {
+                            count.set(0);
+                            break 'inner;
+                        }
+                        _ => {}
+                    }
+                }
             }
         }
     });
@@ -86,13 +99,16 @@ fn App() -> Element {
     rsx! {
         div {
             style: "text-align: center;",
-            link { rel: "stylesheet", href: "main.css" }
             canvas {
                 id: "pixels",
                 style: "border: 1px solid rgb(110,220,230); width: {WIDTH}px; height: {HEIGHT}px;",
                 width: "{WIDTH}",
                 height: "{HEIGHT}",
             },
+            p { "Timestep: {count}" },
+            button { onclick: move |_| tx.send(Action::Start), "Start" },
+            button { onclick: move |_| tx.send(Action::Stop), "Stop" },
+            button { onclick: move |_| tx.send(Action::Pause), "Pause" },
         }
     }
 }
