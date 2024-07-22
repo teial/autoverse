@@ -15,8 +15,7 @@ deploy-debug:
 
 # Serve front locally
 serve:
-    cd simulator
-    dx serve
+    cd simulator && dx serve
 
 # Build simulator with debug profile
 build-debug:

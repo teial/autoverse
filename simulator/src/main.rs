@@ -1,10 +1,23 @@
 #![allow(non_snake_case)]
 
+use std::time::Duration;
+
 use dioxus::prelude::*;
 use gloo::utils::window;
-use ndarray::Array2;
+use grid::Grid;
+use model::{
+    lenia::{self, Lenia},
+    Model,
+};
+use tokio::time;
 use tracing::Level;
 use web_sys::wasm_bindgen::{Clamped, JsCast};
+
+mod error;
+mod grid;
+mod model;
+
+pub use error::Error;
 
 const WIDTH: usize = 1024;
 const HEIGHT: usize = 512;
@@ -15,8 +28,7 @@ fn main() {
 }
 
 fn App() -> Element {
-    let state = use_signal(|| Array2::<f64>::zeros((WIDTH, HEIGHT)));
-
+    let mut state = use_signal(|| Grid::new(WIDTH, HEIGHT));
     use_effect(move || {
         let document = window().document();
         let canvas = document.unwrap().get_element_by_id("pixels").unwrap();
@@ -50,7 +62,7 @@ fn App() -> Element {
             for x in 0..width {
                 let offset = (y * bytes_per_line + 4 * x) as usize;
                 let dst_pixel = &mut data[offset..offset + 4];
-                let value = (255.0 * state[[x, y]]) as u8;
+                let value = (255.0 * state.at(x, y)) as u8;
                 dst_pixel[0..=2].copy_from_slice(&[value, value, value]);
                 dst_pixel[3] = 255;
             }
@@ -58,6 +70,17 @@ fn App() -> Element {
 
         let image_data = web_sys::ImageData::new_with_u8_clamped_array(Clamped(data.as_slice()), width as u32).unwrap();
         context.put_image_data(&image_data, 0., 0.).unwrap();
+    });
+
+    let lenia = Lenia::new(7, 1.0);
+    use_coroutine(|_rx: UnboundedReceiver<()>| {
+        let mut state = state.to_owned();
+        async move {
+            loop {
+                time::sleep(Duration::from_secs(1)).await;
+                let _ = state.write().update(lenia.kernel());
+            }
+        }
     });
 
     rsx! {
