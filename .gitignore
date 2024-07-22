@@ -1,5 +1,5 @@
 # Shuttle
-/target
+service/target
 .shuttle-storage
 Secrets*.toml
 
@@ -9,3 +9,6 @@ Secrets*.toml
 .direnv/
 .envrc
 devenv.lock
+
+# Static assets
+service/assets/
