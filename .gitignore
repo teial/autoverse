@@ -1,0 +1,11 @@
+# Shuttle
+/target
+.shuttle-storage
+Secrets*.toml
+
+# Devenv
+.devenv.flake.nix
+.devenv/
+.direnv/
+.envrc
+devenv.lock
