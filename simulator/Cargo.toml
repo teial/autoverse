@@ -1,0 +1,26 @@
+[package]
+name = "simulator"
+version = "0.1.0"
+authors = ["Teia Leusten <teia.leusten@proton.me>"]
+edition = "2021"
+
+[dependencies]
+dioxus = { version = "0.5", features = ["web"] }
+tracing = "0.1.40"
+dioxus-logger = "0.5.0"
+gloo = { version = "0.11.0", features = ["futures"] }
+ndarray = "0.15.6"
+getrandom = { version = "0.2.15", features = ["js"] }
+anyhow = "1.0.86"
+ndarray-conv = "0.3.3"
+
+[dependencies.web-sys]
+version = "0.3.69"
+features = [
+    'CanvasRenderingContext2d',
+    'Document',
+    'Element',
+    'HtmlCanvasElement',
+    'ImageData',
+    'Window',
+]

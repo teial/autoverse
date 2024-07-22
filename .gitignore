@@ -10,5 +10,10 @@ Secrets*.toml
 .envrc
 devenv.lock
 
+# Dioxus
+simulator/dist/
+simulator/static/
+simulator/.dioxus/
+
 # Static assets
 service/assets/
